@@ -1,0 +1,8 @@
+# 路径为相对路径，相对于本文件所在目录（项目根）解析。
+# 数据集不随仓库分发，自备数据后按 DATA.md 第 3 节的目录结构摆放即可。
+train: dataset/train/images
+val: dataset/val/images
+test: dataset/test/images
+
+nc: 1
+names: ['cabbage']
