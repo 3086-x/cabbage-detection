@@ -1,0 +1,49 @@
+{
+  "name": "ca_nomosaic",
+  "weights": "D:\\cabbage_project\\runs\\detect\\train_ca_nomosaic\\weights\\best.pt",
+  "split": "test",
+  "conf": 0.25,
+  "detection": {
+    "mAP50": 0.9714126829444634,
+    "mAP50_95": 0.7886092461290033,
+    "precision": 0.9667768974156529,
+    "recall": 0.952191235059761,
+    "AP_per_class": [
+      0.7886092461290033
+    ]
+  },
+  "counting": {
+    "images": 75,
+    "gt_total": 3765,
+    "pred_total": 4188,
+    "MAE": 5.8,
+    "RMSE": 6.741908730718129,
+    "MAPE": 11.977617091913025,
+    "bias": 5.64,
+    "exact_match_rate": 6.666666666666667,
+    "within_3_rate": 28.000000000000004
+  },
+  "by_density": {
+    "sparse": {
+      "images": 26,
+      "avg_gt": 42.88461538461539,
+      "MAE": 6.3076923076923075,
+      "RMSE": 7.179029289427753,
+      "bias": 6.3076923076923075
+    },
+    "medium": {
+      "images": 24,
+      "avg_gt": 49.0,
+      "MAE": 5.875,
+      "RMSE": 6.754628043053148,
+      "bias": 5.458333333333333
+    },
+    "dense": {
+      "images": 25,
+      "avg_gt": 58.96,
+      "MAE": 5.2,
+      "RMSE": 6.241794613730894,
+      "bias": 5.12
+    }
+  }
+}

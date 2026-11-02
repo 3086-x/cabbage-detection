@@ -1,0 +1,49 @@
+{
+  "name": "train_cbam_nomosaic_s2",
+  "weights": "D:\\cabbage_project\\runs\\detect\\train_cbam_nomosaic_s2\\weights\\best.pt",
+  "split": "test",
+  "conf": 0.25,
+  "detection": {
+    "mAP50": 0.9713555887469559,
+    "mAP50_95": 0.8017456400891309,
+    "precision": 0.9683364124193663,
+    "recall": 0.951925630810093,
+    "AP_per_class": [
+      0.8017456400891309
+    ]
+  },
+  "counting": {
+    "images": 75,
+    "gt_total": 3765,
+    "pred_total": 4205,
+    "MAE": 5.946666666666666,
+    "RMSE": 6.918574034197124,
+    "MAPE": 12.306637600969088,
+    "bias": 5.866666666666666,
+    "exact_match_rate": 6.666666666666667,
+    "within_3_rate": 28.000000000000004
+  },
+  "by_density": {
+    "sparse": {
+      "images": 26,
+      "avg_gt": 42.88461538461539,
+      "MAE": 6.269230769230769,
+      "RMSE": 7.090079743502944,
+      "bias": 6.269230769230769
+    },
+    "medium": {
+      "images": 24,
+      "avg_gt": 49.0,
+      "MAE": 6.166666666666667,
+      "RMSE": 7.123903424387503,
+      "bias": 6.0
+    },
+    "dense": {
+      "images": 25,
+      "avg_gt": 58.96,
+      "MAE": 5.4,
+      "RMSE": 6.526867548832288,
+      "bias": 5.32
+    }
+  }
+}

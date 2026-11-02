@@ -1,0 +1,21 @@
+{
+  "name": "rtdetr_legacy",
+  "weights": "D:/cabbage_project/runs/detect/train4/weights/best.pt",
+  "split": "test",
+  "conf": 0.001,
+  "detection": {
+    "mAP50": 0.96887,
+    "mAP50_95": 0.74444,
+    "precision": 0.94666,
+    "recall": 0.93821
+  },
+  "provenance": {
+    "trained_env": "ultralytics 8.4.37 + torch 2.5.1 + GTX 1650",
+    "eval_env": "ultralytics 8.4.194 + torch 2.11.0+cu128 + RTX 5060 Laptop (仅推理在本机)",
+    "epochs": 20,
+    "batch": 4,
+    "imgsz": 640,
+    "optimizer": "auto (AdamW, lr≈1e-4)"
+  },
+  "caveat": "跨环境 + 跨协议：原论文 RT-DETR 只跑 20 epoch，YOLO 系列是 50 epoch；且 DETR 必须用 AdamW 小学习率，batch 限于 8G 显存只能到 4。因此本行不可与 YOLO 行直接比较，仅用于说明原实验确实做过、且量级吻合论文的 val mAP50 94.4。"
+}

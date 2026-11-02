@@ -1,0 +1,409 @@
+{
+  "ref": {
+    "name": "base_v2",
+    "weights": "runs/detect/train_base_v2/weights/best.pt",
+    "abs_mAP50": 0.9714813892386999,
+    "abs_mAP50_95": 0.7909527988191807
+  },
+  "n_config": 11,
+  "all_sigma_measured": true,
+  "missing_sigma_groups": [],
+  "sigma_by_group": {
+    "完整增强": 0.0022633708101644293,
+    "无Mosaic": 0.006786504134089201,
+    "+SE": 0.008858411637734822,
+    "+CBAM": 0.011615226301953302,
+    "+CA": 0.0028085245918149843,
+    "CBAM@P3": 0.009972883330172964,
+    "残差CBAM": 0.005810355511516746,
+    "加MixUp": 0.002228815439687665,
+    "无Mosaic+CBAM": 0.003508648451078276,
+    "无Mosaic+CA": 0.007965511789141276,
+    "YOLOv8n": 0.0010138336029219973
+  },
+  "n_by_group": {
+    "完整增强": 3,
+    "无Mosaic": 3,
+    "+SE": 3,
+    "+CBAM": 3,
+    "+CA": 3,
+    "CBAM@P3": 3,
+    "残差CBAM": 3,
+    "加MixUp": 3,
+    "无Mosaic+CBAM": 3,
+    "无Mosaic+CA": 3,
+    "YOLOv8n": 3
+  },
+  "z": {
+    "ci95": 1.959964,
+    "bonferroni": {
+      "n": 10,
+      "alpha": 0.005,
+      "z": 2.807034
+    }
+  },
+  "formula": "SE_total = hypot(SE_eval, sigma_paired / sqrt(n)); SE_eval = boot_half / 1.96",
+  "rows": [
+    {
+      "name": "yolov8n",
+      "label": "YOLOv8n",
+      "delta": -0.023045606463918178,
+      "seed0_delta": -0.025202164785376513,
+      "n_seed": 3,
+      "abs_mAP50_95": 0.7662223572424448,
+      "eval_half": 0.006053597345795091,
+      "eval_only_ci": [
+        -0.030693476137962826,
+        -0.018586281446372643
+      ],
+      "se_eval": 0.003088626804265329,
+      "se_train_single": 0.0030918716241576326,
+      "se_train": 0.0017850929145071747,
+      "train_sigma_source": "实测",
+      "seed_paired_mean": -0.023045606463918178,
+      "seed_paired_std": 0.0030918716241576326,
+      "se_total": 0.0035673761014855133,
+      "ci95_total": [
+        -0.03003753519729013,
+        -0.016053677730546227
+      ],
+      "ci_bonf_total": [
+        -0.03305935247157546,
+        -0.013031860456260893
+      ],
+      "verdict_95": "负",
+      "verdict_bonf": "负",
+      "significant_final": true,
+      "ci_bonf_conservative": [
+        -0.03531311122988474,
+        -0.010778101697951618
+      ],
+      "verdict_conservative": "负"
+    },
+    {
+      "name": "base_mixup",
+      "label": "加 MixUp 0.15",
+      "delta": -0.010593948916189663,
+      "seed0_delta": -0.013458864622324485,
+      "n_seed": 3,
+      "abs_mAP50_95": 0.7776152142422188,
+      "eval_half": 0.006021026206060628,
+      "eval_only_ci": [
+        -0.019458753662435036,
+        -0.00741670125031378
+      ],
+      "se_eval": 0.003072008570596515,
+      "se_train_single": 0.0025161995632848244,
+      "se_train": 0.0014527284951973123,
+      "train_sigma_source": "实测",
+      "seed_paired_mean": -0.010593948916189663,
+      "seed_paired_std": 0.0025161995632848244,
+      "se_total": 0.003398184329693828,
+      "ci95_total": [
+        -0.0172542678677537,
+        -0.003933629964625629
+      ],
+      "ci_bonf_total": [
+        -0.020132767867907447,
+        -0.0010551299644718792
+      ],
+      "verdict_95": "负",
+      "verdict_bonf": "负",
+      "significant_final": true,
+      "ci_bonf_conservative": [
+        -0.021740559310269334,
+        0.0005526614778900082
+      ],
+      "verdict_conservative": null
+    },
+    {
+      "name": "cbam_v2",
+      "label": "+CBAM",
+      "delta": -0.007664616429599665,
+      "seed0_delta": -0.021508443440694247,
+      "n_seed": 3,
+      "abs_mAP50_95": 0.7694535566946603,
+      "eval_half": 0.006252746809619837,
+      "eval_only_ci": [
+        -0.027615062318915938,
+        -0.015109568699676263
+      ],
+      "se_eval": 0.0031902355398465672,
+      "se_train_single": 0.011981681456362457,
+      "se_train": 0.006917627014175212,
+      "train_sigma_source": "实测",
+      "seed_paired_mean": -0.007664616429599665,
+      "seed_paired_std": 0.011981681456362457,
+      "se_total": 0.007617818999355838,
+      "ci95_total": [
+        -0.02259526742685313,
+        0.007266034567653801
+      ],
+      "ci_bonf_total": [
+        -0.029048093366637478,
+        0.01371886050743815
+      ],
+      "verdict_95": null,
+      "verdict_bonf": null,
+      "significant_final": false,
+      "ci_bonf_conservative": [
+        -0.04246938103220632,
+        0.02714014817300699
+      ],
+      "verdict_conservative": null
+    },
+    {
+      "name": "cbam_res_v2",
+      "label": "残差CBAM@SPPF",
+      "delta": -0.005419205474831916,
+      "seed0_delta": -0.009258848096864059,
+      "n_seed": 3,
+      "abs_mAP50_95": 0.7816748912654395,
+      "eval_half": 0.0053115877044893406,
+      "eval_only_ci": [
+        -0.014775516264113131,
+        -0.00415234085513445
+      ],
+      "se_eval": 0.0027100435030895163,
+      "se_train_single": 0.0044529176611333215,
+      "se_train": 0.002570893210334562,
+      "train_sigma_source": "实测",
+      "seed_paired_mean": -0.005419205474831916,
+      "seed_paired_std": 0.0044529176611333215,
+      "se_total": 0.003735482256360221,
+      "ci95_total": [
+        -0.01274061621993672,
+        0.001902205270272888
+      ],
+      "ci_bonf_total": [
+        -0.015904831174831772,
+        0.005066420225167939
+      ],
+      "verdict_95": null,
+      "verdict_bonf": null,
+      "significant_final": false,
+      "ci_bonf_conservative": [
+        -0.02005158513068628,
+        0.009213174181022452
+      ],
+      "verdict_conservative": null
+    },
+    {
+      "name": "cbam_p3",
+      "label": "CBAM@P3",
+      "delta": -0.00485712400049491,
+      "seed0_delta": -0.01677279569168133,
+      "n_seed": 3,
+      "abs_mAP50_95": 0.774151947292165,
+      "eval_half": 0.00495368724442608,
+      "eval_only_ci": [
+        -0.022433887254176037,
+        -0.012526512765323877
+      ],
+      "se_eval": 0.002527437873566086,
+      "se_train_single": 0.011211442352109724,
+      "se_train": 0.00647292925999452,
+      "train_sigma_source": "实测",
+      "seed_paired_mean": -0.00485712400049491,
+      "seed_paired_std": 0.011211442352109724,
+      "se_total": 0.006948867203338215,
+      "ci95_total": [
+        -0.018476653559818493,
+        0.008762405558828672
+      ],
+      "ci_bonf_total": [
+        -0.024362830501750192,
+        0.014648582500760371
+      ],
+      "verdict_95": null,
+      "verdict_bonf": null,
+      "significant_final": false,
+      "ci_bonf_conservative": [
+        -0.03711779580468095,
+        0.02740354780369113
+      ],
+      "verdict_conservative": null
+    },
+    {
+      "name": "se",
+      "label": "+SE",
+      "delta": -0.003637112444919118,
+      "seed0_delta": -0.007366652946441343,
+      "n_seed": 3,
+      "abs_mAP50_95": 0.7835413518440528,
+      "eval_half": 0.005324242192136325,
+      "eval_only_ci": [
+        -0.012939483279473477,
+        -0.0022909988952008273
+      ],
+      "se_eval": 0.0027164999929265663,
+      "se_train_single": 0.007067751591707718,
+      "se_train": 0.004080568284037857,
+      "train_sigma_source": "实测",
+      "seed_paired_mean": -0.003637112444919118,
+      "seed_paired_std": 0.007067751591707718,
+      "se_total": 0.004902082183344716,
+      "ci95_total": [
+        -0.01324501704931616,
+        0.005970792159477923
+      ],
+      "ci_bonf_total": [
+        -0.017397423804361968,
+        0.010123198914523731
+      ],
+      "verdict_95": null,
+      "verdict_bonf": null,
+      "significant_final": false,
+      "ci_bonf_conservative": [
+        -0.02489147356874479,
+        0.017617248678906558
+      ],
+      "verdict_conservative": null
+    },
+    {
+      "name": "ca",
+      "label": "+CA",
+      "delta": -0.0019246514773576158,
+      "seed0_delta": -0.00569052775459622,
+      "n_seed": 3,
+      "abs_mAP50_95": 0.7852496442712968,
+      "eval_half": 0.004670443392175104,
+      "eval_only_ci": [
+        -0.01068981582147969,
+        -0.0013489290371294818
+      ],
+      "se_eval": 0.002382923049696374,
+      "se_train_single": 0.0035223311921110632,
+      "se_train": 0.0020336188619403377,
+      "train_sigma_source": "实测",
+      "seed_paired_mean": -0.0019246514773576158,
+      "seed_paired_std": 0.0035223311921110632,
+      "se_total": 0.003132718936708779,
+      "ci95_total": [
+        -0.008064667815425102,
+        0.00421536486070987
+      ],
+      "ci_bonf_total": [
+        -0.010718300045143007,
+        0.0068689970904277755
+      ],
+      "verdict_95": null,
+      "verdict_bonf": null,
+      "significant_final": false,
+      "ci_bonf_conservative": [
+        -0.013862020018513048,
+        0.010012717063797815
+      ],
+      "verdict_conservative": null
+    },
+    {
+      "name": "base_nomosaic",
+      "label": "无 Mosaic",
+      "delta": 0.005916170857026633,
+      "seed0_delta": 0.012526651036907421,
+      "n_seed": 3,
+      "abs_mAP50_95": 0.803445820774592,
+      "eval_half": 0.005715019552192242,
+      "eval_only_ci": [
+        0.006173278280359393,
+        0.017603317384743876
+      ],
+      "se_eval": 0.0029158798591159027,
+      "se_train_single": 0.005706502459572845,
+      "se_train": 0.0032946507311656438,
+      "train_sigma_source": "实测",
+      "seed_paired_mean": 0.005916170857026633,
+      "seed_paired_std": 0.005706502459572845,
+      "se_total": 0.004399668032155163,
+      "ci95_total": [
+        -0.0027070200979483284,
+        0.014539361812001595
+      ],
+      "ci_bonf_total": [
+        -0.006433846897946001,
+        0.018266188611999266
+      ],
+      "verdict_95": null,
+      "verdict_bonf": null,
+      "significant_final": false,
+      "ci_bonf_conservative": [
+        -0.012072192604145895,
+        0.02390453431819916
+      ],
+      "verdict_conservative": null
+    },
+    {
+      "name": "cbam_nomosaic",
+      "label": "无Mosaic+CBAM",
+      "delta": 0.007439411085041758,
+      "seed0_delta": 0.004572205959163078,
+      "n_seed": 3,
+      "abs_mAP50_95": 0.7956158709932301,
+      "eval_half": 0.005807524816937562,
+      "eval_only_ci": [
+        -0.0021727231798854855,
+        0.00944232645398964
+      ],
+      "se_eval": 0.002963077289653056,
+      "se_train_single": 0.0025431823384895373,
+      "se_train": 0.0014683070077252363,
+      "train_sigma_source": "实测",
+      "seed_paired_mean": 0.007439411085041758,
+      "seed_paired_std": 0.0025431823384895373,
+      "se_total": 0.003306924930111468,
+      "ci95_total": [
+        0.0009579572713207651,
+        0.013920864898762752
+      ],
+      "ci_bonf_total": [
+        -0.001843239629228756,
+        0.016722061799312272
+      ],
+      "verdict_95": "正",
+      "verdict_bonf": null,
+      "significant_final": false,
+      "ci_bonf_conservative": [
+        -0.003521545739403489,
+        0.018400367909487007
+      ],
+      "verdict_conservative": null
+    },
+    {
+      "name": "ca_nomosaic",
+      "label": "无Mosaic+CA",
+      "delta": 0.007453688537503056,
+      "seed0_delta": -0.002374261488502505,
+      "n_seed": 3,
+      "abs_mAP50_95": 0.7886092461290033,
+      "eval_half": 0.006332447607719857,
+      "eval_only_ci": [
+        -0.008656967345120134,
+        0.00400792787031958
+      ],
+      "se_eval": 0.0032308999592440763,
+      "se_train_single": 0.009118491493271522,
+      "se_train": 0.005264563518243626,
+      "train_sigma_source": "实测",
+      "seed_paired_mean": 0.007453688537503056,
+      "seed_paired_std": 0.009118491493271522,
+      "se_total": 0.006176920234572006,
+      "ci95_total": [
+        -0.0046528527531296306,
+        0.019560229828135742
+      ],
+      "ci_bonf_total": [
+        -0.00988513657622854,
+        0.02479251365123465
+      ],
+      "verdict_95": null,
+      "verdict_bonf": null,
+      "significant_final": false,
+      "ci_bonf_conservative": [
+        -0.019701460544090433,
+        0.03460883761909654
+      ],
+      "verdict_conservative": null
+    }
+  ],
+  "note": "效应量为 n 种子配对均值；训练端 SE = σ/√n；评估端 SE 不随 n 缩小；n=3 时 σ 自身不可靠，结论只到量级"
+}

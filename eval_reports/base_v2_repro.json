@@ -1,0 +1,49 @@
+{
+  "name": "base_v2_repro",
+  "weights": "D:\\cabbage_project\\runs\\detect\\base_v2_repro\\weights\\best.pt",
+  "split": "test",
+  "conf": 0.25,
+  "detection": {
+    "mAP50": 0.9714830394144492,
+    "mAP50_95": 0.7909522131047857,
+    "precision": 0.97378650242283,
+    "recall": 0.947207302923346,
+    "AP_per_class": [
+      0.7909522131047857
+    ]
+  },
+  "counting": {
+    "images": 75,
+    "gt_total": 3765,
+    "pred_total": 4183,
+    "MAE": 5.706666666666667,
+    "RMSE": 6.6932802122726045,
+    "MAPE": 11.761883349842304,
+    "bias": 5.573333333333333,
+    "exact_match_rate": 9.333333333333334,
+    "within_3_rate": 28.000000000000004
+  },
+  "by_density": {
+    "sparse": {
+      "images": 26,
+      "avg_gt": 42.88461538461539,
+      "MAE": 6.076923076923077,
+      "RMSE": 7.005492350786137,
+      "bias": 6.076923076923077
+    },
+    "medium": {
+      "images": 24,
+      "avg_gt": 49.0,
+      "MAE": 5.458333333333333,
+      "RMSE": 6.393355926272211,
+      "bias": 5.291666666666667
+    },
+    "dense": {
+      "images": 25,
+      "avg_gt": 58.96,
+      "MAE": 5.56,
+      "RMSE": 6.642288762166245,
+      "bias": 5.32
+    }
+  }
+}

@@ -1,0 +1,108 @@
+{
+  "config": {
+    "conf": 0.65,
+    "iou": 0.5,
+    "selected_on": "val"
+  },
+  "models": {
+    "base_v2": {
+      "model": "base_v2",
+      "MAE": 3.067,
+      "RMSE": 4.258,
+      "MAPE": 5.9,
+      "bias": -2.267,
+      "pred": 3595,
+      "gt": 3765
+    },
+    "se": {
+      "model": "se",
+      "MAE": 2.653,
+      "RMSE": 3.493,
+      "MAPE": 5.29,
+      "bias": 0.067,
+      "pred": 3770,
+      "gt": 3765
+    },
+    "cbam_v2": {
+      "model": "cbam_v2",
+      "MAE": 2.52,
+      "RMSE": 3.408,
+      "MAPE": 5.1,
+      "bias": 0.467,
+      "pred": 3800,
+      "gt": 3765
+    },
+    "ca": {
+      "model": "ca",
+      "MAE": 2.8,
+      "RMSE": 3.615,
+      "MAPE": 5.7,
+      "bias": 1.067,
+      "pred": 3845,
+      "gt": 3765
+    },
+    "cbam_res_v2": {
+      "model": "cbam_res_v2",
+      "MAE": 2.747,
+      "RMSE": 3.615,
+      "MAPE": 5.65,
+      "bias": 1.227,
+      "pred": 3857,
+      "gt": 3765
+    },
+    "cbam_p3": {
+      "model": "cbam_p3",
+      "MAE": 2.76,
+      "RMSE": 3.55,
+      "MAPE": 5.57,
+      "bias": 0.04,
+      "pred": 3768,
+      "gt": 3765
+    },
+    "base_nomosaic": {
+      "model": "base_nomosaic",
+      "MAE": 2.64,
+      "RMSE": 3.581,
+      "MAPE": 5.26,
+      "bias": -1.12,
+      "pred": 3681,
+      "gt": 3765
+    },
+    "base_mixup": {
+      "model": "base_mixup",
+      "MAE": 2.493,
+      "RMSE": 3.519,
+      "MAPE": 4.92,
+      "bias": -0.813,
+      "pred": 3704,
+      "gt": 3765
+    },
+    "cbam_nomosaic": {
+      "model": "cbam_nomosaic",
+      "MAE": 2.56,
+      "RMSE": 3.429,
+      "MAPE": 5.11,
+      "bias": -0.72,
+      "pred": 3711,
+      "gt": 3765
+    },
+    "ca_nomosaic": {
+      "model": "ca_nomosaic",
+      "MAE": 2.227,
+      "RMSE": 3.035,
+      "MAPE": 4.42,
+      "bias": -0.573,
+      "pred": 3722,
+      "gt": 3765
+    },
+    "yolov8n": {
+      "model": "yolov8n",
+      "MAE": 3.32,
+      "RMSE": 4.74,
+      "MAPE": 6.38,
+      "bias": -2.707,
+      "pred": 3562,
+      "gt": 3765
+    }
+  }
+}
