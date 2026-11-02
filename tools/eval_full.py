@@ -61,6 +61,15 @@ def main() -> None:
     ap.add_argument("--conf", type=float, default=0.25, help="计数时使用的置信度阈值")
     ap.add_argument("--iou", type=float, default=0.7)
     ap.add_argument("--imgsz", type=int, default=640)
+    ap.add_argument(
+        "--rect",
+        choices=["auto", "true", "false"],
+        default="auto",
+        help=(
+            "验证时的矩形推理开关。auto=沿用 ultralytics 默认（rect=True，会把 640 补齐 stride 变成 672）；"
+            "false=强制 640x640。评估固定输入尺寸的 ONNX 时必须用 false，否则 ONNX 会被二次缩放、mAP 假性下跌。"
+        ),
+    )
     ap.add_argument("--name", default="")
     args = ap.parse_args()
 
@@ -84,7 +93,10 @@ def main() -> None:
     model = YOLO(args.weights)
 
     # ---- 1) 标准检测指标（交给 ultralytics）----
-    val = model.val(data=args.data, split=args.split, imgsz=args.imgsz, verbose=False)
+    val_kwargs = {"data": args.data, "split": args.split, "imgsz": args.imgsz, "verbose": False}
+    if args.rect != "auto":
+        val_kwargs["rect"] = args.rect == "true"
+    val = model.val(**val_kwargs)
     det = {
         "mAP50": float(val.box.map50),
         "mAP50_95": float(val.box.map),
@@ -148,6 +160,7 @@ def main() -> None:
         "weights": str(Path(args.weights).resolve()),
         "split": args.split,
         "conf": args.conf,
+        "rect": args.rect,
         "detection": det,
         "counting": counting,
         "by_density": by_density,

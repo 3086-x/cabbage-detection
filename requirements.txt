@@ -24,3 +24,16 @@ matplotlib>=3.7
 
 # 评估与计数
 opencv-python>=4.8
+
+# ==========================================================
+# 以下仅部署/服务化需要，训练与复现不必装
+# ==========================================================
+# ONNX 导出 + 本地推理（tools/export_onnx.py、tools/bench_deploy.py）
+onnx>=1.17
+onnxruntime>=1.20
+onnxslim>=0.1.82
+
+# HTTP 服务（src/serve/api.py）
+fastapi>=0.115
+uvicorn>=0.30
+python-multipart>=0.0.9

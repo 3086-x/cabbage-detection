@@ -1,0 +1,18 @@
+{
+  "endpoint": "http://127.0.0.1:8018/predict?conf=0.65",
+  "requests": 60,
+  "concurrency": 12,
+  "batch": 1,
+  "wall_s": 1.9,
+  "qps": 31.61,
+  "ok": 60,
+  "failed": 0,
+  "error_detail": {},
+  "latency_ms": {
+    "mean": 360.4,
+    "p50": 370.94,
+    "p95": 456.39,
+    "p99": 476.62,
+    "max": 561.18
+  }
+}

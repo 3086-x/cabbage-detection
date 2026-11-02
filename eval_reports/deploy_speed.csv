@@ -1,0 +1,5 @@
+backend,device,precision,batch,fwd_median_ms,fwd_p95_ms,fwd_cv_pct,e2e_median_ms,e2e_p95_ms,e2e_cv_pct,speedup_vs_ort_cpu_fp32,stable
+PyTorch,CPU,FP32,1,55.10,60.28,4.5,73.39,79.78,5.0,0.6,yes
+ONNX Runtime,CPU,FP32,1,33.25,38.00,7.2,49.49,57.15,6.3,1.0,yes
+ONNX Runtime,CPU,INT8,1,45.04,50.13,6.8,56.78,65.94,6.8,0.74,yes
+PyTorch,GPU,FP32,1,12.22,15.21,13.9,26.04,36.06,14.4,2.72,NO

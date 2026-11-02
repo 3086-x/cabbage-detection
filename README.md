@@ -103,8 +103,14 @@ cd cabbage-detection && bash reproduce.sh stats
   而不是定位变准。
 - **A 组缺 RT-DETR 的统一协议**：原论文只跑 20 epoch、必须用 AdamW 小学习率、8G 显存下 batch 只能到 4，
   三项协议都不同，需单独设计。现有那行是跨环境历史数据，只作存在性证明、不参与排名。
-- **测速只到 PyTorch**：笔记本 GPU 频率漂移让同一模型跨批次时延差 35%，因此「谁快几毫秒」
-  不构成结论，只能看同一次测量内的相对关系。ONNX / TensorRT 未测。
+- **测速只到 PyTorch 与 ORT-CPU**：笔记本 GPU 频率漂移让同一模型跨批次时延差 35%（CV 13.9%），
+  所以「谁快几毫秒」不构成结论。ORT-GPU 与 TensorRT 都没测：本机只装了 onnxruntime 的 CPU 版，
+  RTX 5060 是 sm_120、TensorRT 要单独适配 Blackwell。
+- **INT8 不划算，已回退 FP32**：量化后 mAP50-95 掉 0.56pp（落在本数据集的可分辨门槛内），
+  但前向反而慢 35%（45.04ms vs 33.25ms）——小模型上量化的重排开销超过整数卷积的收益。
+  服务端最终用 FP32。详见 [docs/DEPLOY.md](docs/DEPLOY.md)。
+- **Docker 镜像未实测构建**：本机没有 Docker，Dockerfile 与 compose 按 CPU-only 最小依赖写好，
+  但没有实际构建过，不能当作「已验证可部署」。
 
 ## 后续
 
@@ -113,8 +119,12 @@ cd cabbage-detection && bash reproduce.sh stats
   输出结构化结果（株数、密度分级、逐框置信度分布）而非一张标注图，让上层编排自己决定
   要不要复查、要不要换阈值重跑。本仓库的结论直接决定了那边的选型：注意力模块无可分辨增益，
   所以工具层固定用 YOLOv11n 基线，复杂度花在编排与错误恢复上，而不是继续堆结构。
-- **ONNX / TensorRT 时延**：当前测速只到 PyTorch，且笔记本 GPU 频率漂移让绝对时延不可比，
-  须先锁频 + 热稳态才有意义。
+- **ONNX 部署链路 → 已完成**：导出后做张量级与框级两级自检，同输入下 PyTorch 与 ONNX 的
+  mAP50-95 差 **0.0001**、框坐标偏差 **0.000px**；ORT-CPU 前向比 PyTorch-CPU 快 **1.66×**。
+  FastAPI 服务 4 路并发约 **30 QPS / P95 156ms**，与离线评估的株数逐图一致。
+  做的过程中撞到两个不报错只掉点的坑（val 输入是 672 不是 640、INT8 全量化把分类分支打塌），
+  过程与负结果都在 [docs/DEPLOY.md](docs/DEPLOY.md)。
+- **TensorRT 时延**：须先锁频 + 热稳态才有意义，且 sm_120 要单独适配，未做。
 - **按密度自适应计数阈值**：sparse / medium / dense 三档的最优 conf 并不相同，
   现在用 val 选出的单一全局值。
 
@@ -124,6 +134,7 @@ cd cabbage-detection && bash reproduce.sh stats
 |---|---|
 | 数据规模、标注口径、为何不公开 | [DATA.md](DATA.md) |
 | 环境、8G 显存下的实操约束 | [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) |
+| ONNX 导出、INT8 取舍、服务与压测 | [docs/DEPLOY.md](docs/DEPLOY.md) |
 | 注入实现要点、复现命令、目录结构 | [docs/METHOD.md](docs/METHOD.md) |
 | 原论文实验矩阵 vs 本次覆盖、判据沿革、作废结论 | [REPRO_STATUS.md](REPRO_STATUS.md) |
 | 完整实验记录与踩坑过程 | [EXPERIMENT_CBAM.md](EXPERIMENT_CBAM.md) |
