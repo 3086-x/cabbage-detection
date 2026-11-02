@@ -1,0 +1,26 @@
+# 甘蓝检测复现项目 — 运行依赖
+#
+# 实测环境：Windows 11 / Python 3.13.12 / RTX 5060 Laptop 8GB / CUDA 12.8
+# 详细说明见 docs/ENVIRONMENT.md
+#
+# 安装：
+#   python -m venv .venv
+#   .venv/Scripts/activate          (Windows)
+#   pip install -r requirements.txt
+#
+# 注意：检测指标对 ultralytics 版本敏感，核心依赖固定版本。
+
+# 核心框架 —— 版本必须固定，否则 mAP 会有零点几个点的漂移
+ultralytics==8.4.194
+
+# PyTorch —— 按本机 CUDA 选 wheel，实测 cu128
+# pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+torch>=2.0
+torchvision>=0.15
+
+# 统计与绘图
+numpy>=1.24,<3
+matplotlib>=3.7
+
+# 评估与计数
+opencv-python>=4.8

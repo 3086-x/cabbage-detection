@@ -1,0 +1,10 @@
+# 换行符统一为 LF（本项目在 Windows 上开发，避免 CRLF 混入 diff）
+* text=auto eol=lf
+
+# 二进制文件不做行尾转换、不参与文本 diff
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.npy binary
+*.pt binary
+*.csv text eol=lf
