@@ -1,0 +1,15 @@
+# 推理服务镜像的依赖清单 —— 刻意不带 torch。
+#
+# 训练侧 requirements.txt 里有 torch/ultralytics/matplotlib 等等，那些在服务端
+# 一行都用不上：推理只需要「读图 + 跑 ONNX + NMS」。带 torch 的镜像光依赖就
+# 2~3 GB，去掉之后整个镜像可以压到几百 MB，冷启动也快一个数量级。
+#
+# 注意 opencv 用 headless 版：服务端不显示窗口，装完整版会把 GUI 依赖
+# （libGL 等）一并拉进镜像。
+onnxruntime==1.31.1
+opencv-python-headless==5.0.0.93
+numpy==2.5.4
+fastapi==0.162.0
+uvicorn==0.54.0
+python-multipart==0.0.33
+pydantic==2.14.2

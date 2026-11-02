@@ -1,0 +1,35 @@
+# 单机部署示例。
+#
+#   docker compose -f deploy/docker-compose.yml up --build
+#   浏览器打开 http://localhost:8000/docs
+#
+# 关于 cpus 限制：实测吞吐在 4 路并发、约 30 QPS 处饱和（12 核机器），
+# 再往上加并发只是把 P95 从 156ms 推到 575ms。所以这里把配额定在 6 核，
+# 按「每核约 5 QPS」估算容量，留出一半核给同机其他进程。
+
+services:
+  detect:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: cabbage-detect:0.1.0
+    container_name: cabbage-detect
+    ports:
+      - "8000:8000"
+    environment:
+      MODEL_PATH: /app/deploy/models/base_v2.onnx
+      IMGSZ: "640"
+      MAX_WORKERS: "4"
+      INTRA_THREADS: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: "6.0"
+          memory: 2g
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=4).status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
