@@ -104,6 +104,8 @@
 - 计数 MAE 在 c672 / c640 两行相同，因为计数走 predict 链路（letterbox 固定 640），与 val 的 rect 无关。
 - INT8 掉的 0.56pp **小于 CBAM 自己的 MDD（1.67pp）**，也就是说在这批数据上，
   量化带来的精度损失比「加不加注意力」的差异还小；但它速度也更慢，所以没有采用。
-- `deploy_speed.csv/md` 是同硬件三后端测速，`loadtest_w*_b*.json` 是 HTTP 压测原始结果。
+- `deploy_speed.csv/md` 是同硬件分设备（CPU 组 / GPU 组）测速，加速比只在组内成立；
+  `ort_gpu_parity.json` 是 ORT-GPU 与 PyTorch-GPU 的逐图株数一致性（75 张里 74 张完全一致）；
+  `loadtest_w*_b*.json` 是 HTTP 压测原始结果。
   这些是**工程测量**，不是模型指标，不能和上面的 mAP 混在一张表里比。
 

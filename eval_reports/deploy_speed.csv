@@ -1,5 +1,12 @@
-backend,device,precision,batch,fwd_median_ms,fwd_p95_ms,fwd_cv_pct,e2e_median_ms,e2e_p95_ms,e2e_cv_pct,speedup_vs_ort_cpu_fp32,stable
-PyTorch,CPU,FP32,1,55.10,60.28,4.5,73.39,79.78,5.0,0.6,yes
-ONNX Runtime,CPU,FP32,1,33.25,38.00,7.2,49.49,57.15,6.3,1.0,yes
-ONNX Runtime,CPU,INT8,1,45.04,50.13,6.8,56.78,65.94,6.8,0.74,yes
-PyTorch,GPU,FP32,1,12.22,15.21,13.9,26.04,36.06,14.4,2.72,NO
+backend,device,precision,batch,ep,fwd_median_ms,per_img_ms,img_per_s,fwd_p95_ms,fwd_cv_pct,e2e_median_ms,e2e_p95_ms,e2e_cv_pct,speedup_same_device,speedup_base,stable
+PyTorch,CPU,FP32,1,cpu,76.44,76.44,13.1,85.72,6.6,98.47,111.46,6.6,0.55,ORT-CPU-FP32,yes
+ONNX Runtime,CPU,FP32,1,cpu,42.27,42.27,23.7,45.27,4.9,70.86,91.40,13.1,1.0,ORT-CPU-FP32,yes
+ONNX Runtime,CPU,INT8,1,cpu,51.93,51.93,19.3,58.90,6.7,76.60,82.66,4.7,0.81,ORT-CPU-FP32,yes
+PyTorch,GPU,FP32,1,gpu,12.90,12.90,77.5,15.16,8.3,28.93,37.41,12.1,1.0,PyTorch-GPU-b1,yes
+PyTorch,GPU,FP32,4,gpu,12.59,3.15,317.6,13.36,3.7,35.06,39.59,7.8,1.02,PyTorch-GPU-b1,yes
+PyTorch,GPU,FP32,8,gpu,15.85,1.98,504.6,22.61,16.1,45.45,58.07,12.6,0.81,PyTorch-GPU-b1,NO
+ONNX Runtime,GPU,FP32,1,cuda 100%,7.64,7.64,130.9,8.53,7.6,21.41,25.76,8.2,1.69,PyTorch-GPU-b1,yes
+ONNX Runtime,GPU,FP32,4,cuda 100%,14.07,3.52,284.3,17.58,8.9,32.47,36.46,5.3,0.92,PyTorch-GPU-b1,yes
+ONNX Runtime,GPU,FP32,8,cuda 100%,23.26,2.91,344.0,24.41,2.5,45.93,66.04,22.9,0.55,PyTorch-GPU-b1,yes
+ORT + CUDAGraph,GPU,FP32,1,cuda 100%,3.03,3.03,330.2,3.36,4.8,19.86,23.99,13.3,4.26,PyTorch-GPU-b1,yes
+ORT + CUDAGraph,GPU,FP32,8,cuda 100%,14.61,1.83,547.7,16.47,4.7,48.53,56.60,10.4,0.88,PyTorch-GPU-b1,yes

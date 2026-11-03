@@ -8,11 +8,18 @@
 
 | 项 | 结果 |
 |---|---|
-| ONNX 导出是否无损 | **是**。同输入下 PyTorch 与 ONNX 的 mAP50-95 差 **0.0001**，框级坐标偏差 0.000px |
-| ONNX CPU 比 PyTorch CPU 快多少 | **1.66×**（前向 55.10ms → 33.25ms，同一台机器同一进程） |
-| INT8 量化是否值得 | **不值得**。精度掉 0.56pp，速度反而**慢 35%**（45.04ms vs 33.25ms） |
+| ONNX 导出是否无损 | **是**。同输入下 PyTorch 与 ONNX 的 mAP50-95 差 **0.0001**，框级坐标偏差 0.024px |
+| ONNX CPU 比 PyTorch CPU 快多少 | **1.81×**（前向 76.44ms → 42.27ms，同一次运行内） |
+| 同一个 GPU 上 ONNX 比 PyTorch 快多少 | **1.69×**（12.90ms → 7.64ms）；再开 CUDA Graph → **3.03ms，4.26×** |
+| INT8 量化是否值得 | **不值得**。精度掉 0.56pp，速度**慢 23%**（51.93ms vs 42.27ms） |
+| GPU 批量谁赢 | batch=8 裸 ORT **输**（344 vs 505 img/s），加 CUDA Graph **赢**（548 img/s） |
 | 服务吞吐 | 4 路并发约 **30 QPS**，P95 **156ms**；再往上加并发只增延迟不增吞吐 |
 | Docker 镜像 | 配置已就位，**本机无 Docker 未构建验证** |
+
+> 版本说明：CPU 那三行是 ORT **1.26.0** 测的。上一版用的是 1.31.1（PyTorch 55.10 / ORT 33.25，1.66×）。
+> 换版本是因为 1.31 的 CUDA EP 要 CUDA 13，而本机 torch 是 cu128（见第五节）。两个版本的 CPU 前向差别
+> 与机器状态（功耗/后台负载）叠在一起，**没法彻底拆开**：PyTorch 那行也一起从 55 变到 76，说明至少有一半
+> 是环境漂移。所以绝对值只能同一次运行内比，两次运行一致指向的是「ORT 比 PyTorch 快 1.7 倍上下」这件事。
 
 ## 一、导出与自检
 
@@ -106,28 +113,125 @@ python tools/quantize_int8.py --onnx deploy/models/base_v2.onnx --calib 32 --out
 
 **前提：加速比只有在同一块硬件上才有意义。** 「PyTorch GPU 12ms，ONNX CPU 33ms，所以 ONNX 更慢」是错的——那是两块硬件。所以分两组测：
 
-同一台机器（AMD Ryzen 7 8840HX，12 核 24 线程），输入 640×640，batch=1，预热 15 次、计时 60 次取中位数：
+同一台机器（AMD Ryzen 7 8840HX，12 核 24 线程），输入 640×640，batch=1，预热 25 次、计时 150 次取中位数：
 
-| 后端 | 设备 | 精度 | 前向中位 | 前向 P95 | CV | 端到端中位 | 相对 ORT-CPU-FP32 |
-|---|---|---|---|---|---|---|---|
-| PyTorch | CPU | FP32 | 55.10 ms | 60.28 ms | 4.5% | 73.39 ms | 0.60× |
-| **ONNX Runtime** | CPU | **FP32** | **33.25 ms** | 38.00 ms | 7.2% | **49.49 ms** | **1.00×** |
-| ONNX Runtime | CPU | INT8 | 45.04 ms | 50.13 ms | 6.8% | 56.78 ms | 0.74× |
-| PyTorch | GPU | FP32 | 12.22 ms | 15.21 ms | **13.9%** | 26.04 ms | — |
+| 后端 | 设备 | 精度 | 前向中位 | CV | 端到端中位 | 相对 ORT-CPU-FP32 |
+|---|---|---|---|---|---|---|
+| PyTorch | CPU | FP32 | 76.44 ms | 6.6% | 98.47 ms | 0.55× |
+| **ONNX Runtime** | CPU | **FP32** | **42.27 ms** | 4.9% | **70.86 ms** | **1.00×** |
+| ONNX Runtime | CPU | INT8 | 51.93 ms | 6.7% | 76.60 ms | 0.81× |
 
-三个读数：
+两个读数：
 
-1. **ONNX 相对 PyTorch CPU 快 1.66×**，这是真实的图优化 + 算子融合收益。
-2. **INT8 比 FP32 慢 35%**。QDQ 和 QOperator 两种格式都试过，都是 45ms 左右。这个模型只有 2.6M 参数、卷积通道不宽，量化的「反量化 + 数据重排」固定开销超过了整数卷积省下的时间。加上只量化 Conv 会把图切碎，整数算子之间要反复搬数据。
-3. **GPU 那行不能当加速比用**：CV 13.9% 说明计时本身不稳定（笔记本 GPU 频率漂移），而且它是另一块硬件。
+1. **ONNX 相对 PyTorch CPU 快 1.81×**，这是真实的图优化 + 算子融合收益。
+2. **INT8 比 FP32 慢 23%**。QDQ 和 QOperator 两种格式都试过，都是 50ms 上下。这个模型只有 2.6M 参数、卷积通道不宽，量化的「反量化 + 数据重排」固定开销超过了整数卷积省下的时间。加上只量化 Conv 会把图切碎，整数算子之间要反复搬数据。
 
 所以部署选型是 **ORT CPU FP32**，不是 INT8。INT8 模型可以用 `tools/quantize_int8.py` 随时重生成（`deploy/models/` 下的 `.onnx` 不进仓库，见 `.gitignore`），但没有进服务端——「试过、量化了、测了精度、发现不划算」比「没试」有价值，但结论就是不划算。
 
 ```bash
-python tools/bench_deploy.py --iters 60 --warmup 15
+python tools/bench_deploy.py --iters 150 --warmup 25 --gpu-batches 1,4,8
 ```
 
-## 五、服务设计
+## 五、GPU 那一组：同一个 5060 上 ORT 比 PyTorch 快多少
+
+这一节有三个坑、一个反超和一个负结果。坑的部分比数字本身更值得记：**它们都不会报错，只会给你一组看起来正常的错数字。**
+
+### 5.1 装 ORT-GPU 踩了三个版本坑
+
+**坑 A：provider 注册成功 ≠ 在 GPU 上跑。** 装完 `onnxruntime-gpu` 1.31，`get_available_providers()` 立刻列出 `CUDAExecutionProvider`。但一建会话，日志里是：
+
+```
+Error loading "onnxruntime_providers_cuda.dll" which depends on "cublasLt64_13.dll" which is missing
+Failed to create CUDAExecutionProvider. Require cuDNN 9.* and CUDA 13.*
+```
+
+然后 `session.get_providers()` 返回 `['CPUExecutionProvider']`——**静默回落**。如果不看这行，接下来测到的是"GPU 和 CPU 一样慢"，而你会以为是 GPU 没用。
+
+**坑 B：从 1.27 起 PyPI 默认包是 CUDA 13 构建。** 本机 torch 是 `2.11.0+cu128`（CUDA 12.8 + cuDNN 9.19），差一个大版本就加载不了。CUDA 12 的构建在另一个 index（`aiinfra.pkgs.visualstudio.com/.../onnxruntime-cuda-12`），国内拉 350MB 卡了 15 分钟没下完。最后用 **1.26.0**：1.27 之前的 PyPI 默认包就是 CUDA 12.8 构建，和 torch 天然对齐。
+
+**坑 C：DLL 要手动指路。** ORT 不会自动去 torch 的 `lib` 目录找 cuBLAS/cuDNN，得 `onnxruntime.preload_dlls()` 或者 `os.add_dll_directory(torch/lib)`。缺 `nvrtc64_120_0.dll` 只影响 `EXHAUSTIVE` 卷积算法搜索——实测 `EXHAUSTIVE` 22.89ms vs `HEURISTIC` 23.40ms（batch=8），差 2%，可以不管。
+
+### 5.2 怎么证明它真的在 GPU 上
+
+判据只有一个：**profiling 里每个节点实际落在哪个 EP**。
+
+```python
+so.enable_profiling = True
+# ... 跑几次 ...
+events = json.loads(Path(sess.end_profiling()).read_text())
+Counter(e["args"]["provider"] for e in events if e["cat"] == "Node")
+# → {'CUDAExecutionProvider': 717}   717/717，100%
+```
+
+`tools/bench_deploy.py` 把这件事做成了硬门槛：CUDA 占比 < 99.9% 就**直接丢弃该行**，而不是把 CPU 成绩标成 GPU。宁可少一行，也不要一行假数据。
+
+### 5.3 数字
+
+RTX 5060 Laptop 8GB，输入 640×640，预热 25 次、计时 150 次取中位数。加速比全部相对 **PyTorch-GPU batch=1**（同设备、同一次进程）：
+
+| 后端 | batch | 前向中位 | 每图 | 吞吐 | CV | 端到端中位 | 相对 PyTorch-b1 |
+|---|---|---|---|---|---|---|---|
+| PyTorch | 1 | 12.90 ms | 12.90 ms | 78 /s | 8.3% | 28.93 ms | 1.00× |
+| PyTorch | 4 | 12.59 ms | 3.15 ms | 318 /s | 3.7% | 35.06 ms | 1.02× |
+| PyTorch | 8 | 15.85 ms | 1.98 ms | 505 /s | 16.1% | 45.45 ms | — |
+| **ONNX Runtime** | **1** | **7.64 ms** | 7.64 ms | 131 /s | 7.6% | **21.41 ms** | **1.69×** |
+| ONNX Runtime | 4 | 14.07 ms | 3.52 ms | 284 /s | 8.9% | 32.47 ms | 0.92× |
+| ONNX Runtime | 8 | 23.26 ms | 2.91 ms | 344 /s | 2.5% | 45.93 ms | 0.55× |
+| **ORT + CUDA Graph** | **1** | **3.03 ms** | 3.03 ms | 330 /s | 4.8% | 19.86 ms | **4.26×** |
+| **ORT + CUDA Graph** | 8 | 14.61 ms | 1.83 ms | **548 /s** | 4.7% | 48.53 ms | — |
+
+漂移复核：基准行测完所有行之后再测一遍，7.64 → 7.93ms（**+3.8%**），说明这一批没有明显降频，比值的可信度高。CV 都在 10% 以内（批量行更高是因为单次调用只有 12~23ms，抖动占比大）。
+
+### 5.4 为什么 CUDA Graph 能再快 2.5 倍
+
+7.64ms 里有 **4.6ms 是内核启动开销**：这张图有 717 个节点，一次 launch 约 2µs，串起来就是 1.4ms 起步，再加上 ORT 逐层调度和 Python 侧的每次调用成本。CUDA Graph 把整串内核录成一张图，一次提交就完事，于是 7.64 → **3.03ms**。
+
+代价是硬的：**只能静态 shape、输入必须是同一块固定显存**。服务里要用它，就得把 640×640 的输入缓冲固定住，每张图往同一块显存里覆盖（`OrtValue.update_inplace`）。所以它救不了动态 batch。
+
+**为什么服务端没接这条路**：`src/serve/api.py` 是线程池并发，多个请求会同时往同一块固定显存里写——那是数据竞争，不是优化。要上 GPU + CUDA Graph，得把推理改成单线程队列（谁拿到缓冲谁跑），吞吐模型跟现在的 CPU 多线程版完全不同，得重做压测才能报数字。所以这里只把离线结论记下来，不假装服务已经能跑 3ms。
+
+### 5.5 为什么 batch 放大后 PyTorch 反而赢
+
+看每图耗时：PyTorch 12.90 → 1.98ms（6.5×），ORT 7.64 → 2.91ms（2.6×）。
+
+原因是两边的固定开销不在一个位置：
+
+- **PyTorch 的固定开销在 Python 侧**（每次调用的 dispatch、参数处理）。batch 一大，这笔钱摊到 8 张图上，每图成本立刻塌下来。
+- **ORT 的固定开销在 GPU 侧**（717 个内核的启动）。batch 变大只是每次内核处理的数据变多，启动次数一次没少——所以每图成本降得慢。
+
+这解释了为什么加了 CUDA Graph（把启动开销消掉）之后，batch=8 的 ORT 能到 **548 img/s**，重新超过 PyTorch 的 505 img/s。
+
+所以结论不是"谁更快"，而是：**ORT 的优势全部来自「每次调用的开销更小」，batch 一大这个优势就被稀释；要在大 batch 上继续赢，必须上 CUDA Graph。**
+
+### 5.6 数值一致性：74/75 张株数完全一致
+
+速度只有在"两边算的是同一个模型"时才有意义。全 test 75 张、conf=0.65 下逐图比株数：
+
+- **74/75 完全一致（98.7%）**，Δ 均值 **-0.01**
+- 唯一差异 `img_155`：PyTorch 48 / ORT 49 / GT 49——那个框的分数正卡在 0.65 阈值上，ORT 侧反而与真值一致
+- 单图逐框（按中心点一对一匹配）：坐标 max|Δ| **0.012px**，置信度 max|Δ| 2.45e-4
+
+```bash
+python tools/verify_ort_gpu.py          # 全 test 集株数一致性 + EP 归属
+```
+
+产物 `eval_reports/ort_gpu_parity.json`。
+
+### 5.7 顺带修掉的一个自检 bug
+
+导出动态 batch 版本时，框级自检报 `FAIL：框偏差 153.97px`，但张量级 max|Δ| 只有 1.5e-3px——两者矛盾。
+
+根因是**判定方式**：原来按置信度排序后逐行比坐标。密集小目标里两个框的分数只差 1e-4，浮点累积差就足以让它们在排序中互换位置，于是第 5 行拿 A 框比 B 框，报出上百像素的"偏差"。
+
+改成**按中心点一对一匹配**（贪心最近邻）后，同一个模型报 0.024px。这不是模型的问题，是尺子的问题——和之前评测里那几处「冤枉模型」是同一类错误。
+
+### 5.8 GPU 组的局限
+
+- 只有 1 次运行，没有像主实验那样做多种子/bootstrap，所以「1.69×」是单点测量值，不是置信区间
+- PyTorch 侧没上 `torch.compile` / FP16，ORT 侧没上 FP16 / TensorRT，两边都是各自的默认配置
+- TensorRT 未测：sm_120 需要单独装 TRT 10.x，本机没装
+
+## 六、服务设计
 
 `src/serve/api.py`，FastAPI + ONNX Runtime，四个接口：
 
@@ -161,7 +265,7 @@ python tools/bench_deploy.py --iters 60 --warmup 15
 
 **与离线评估的一致性**：抽 6 张图对比服务与 `tools/eval_full.py` 的株数，**6/6 完全一致**。这条必须验，否则服务端和报告里的数字会互相打脸。
 
-## 六、压测
+## 七、压测
 
 固定请求数、固定客户端并发，图片在 20 张里轮转（`tools/loadtest.py`）：
 
@@ -176,11 +280,11 @@ python tools/bench_deploy.py --iters 60 --warmup 15
 
 **是不是 GIL 卡的？** 起 2 个 uvicorn worker（多进程，绕开 GIL）重测，QPS **31.4**，几乎没变。所以瓶颈不是 Python 解释器，是 **CPU 算力本身已经打满**：单请求推理占 3 线程 × 53ms ≈ 0.16 核·秒，12 核就是 ~75 QPS 的上限，实际跑出 30 QPS（约 40% 效率，剩下是线程同步与内存带宽）。
 
-这个结论决定了扩容方式：**加核比加 worker 有用**，或者换支持 GPU EP 的 ORT 部署。
+这个结论决定了扩容方式：**加核比加 worker 有用**，或者换 GPU EP（第五节：单张 3.03ms，理论上单卡就能顶满这个服务）。
 
 > 另一个试过的配置（intra_op=1 + 12 路并发）吞吐 31.6 QPS、P50 371ms——吞吐略高但延迟差 2.7 倍，不适合在线服务。
 
-## 七、Docker
+## 八、Docker
 
 ```bash
 docker build -f deploy/Dockerfile -t cabbage-detect:0.1.0 .
@@ -195,9 +299,9 @@ docker compose -f deploy/docker-compose.yml up --build
 
 **未验证项**：本机没有 Docker，上述镜像**没有实际构建过**。Dockerfile 按 CPU-only 最小依赖编写，CUDA 相关一行没写。这条在 README 的局限里同样标注。
 
-## 八、还没做的
+## 九、还没做的
 
-- **ORT-GPU**：本机只装了 CPU 版 onnxruntime，没装 onnxruntime-gpu（需要 CUDA 12 + cuDNN 9，且与本机 torch 的 cuDNN 有冲突风险）。所以 GPU 那组只有 PyTorch 一个点。
-- **动态 batch**：现在模型是静态 batch=1，批量接口靠线程池并行逐张跑，不是真 batch。真 batch 需要导出 `--dynamic` 版本，理论上能再提吞吐。
-- **TensorRT**：RTX 5060 是 sm_120，TensorRT 对 Blackwell 的支持要单独装，没做。
-- **INT8 的另一种走法**：只量化骨干、把 head 整个留在 FP32，可能兼顾速度与精度。没试。
+- **TensorRT**：RTX 5060 是 sm_120，TensorRT 对 Blackwell 的支持要单独装 TRT 10.x，没做。
+- **INT8 的另一种走法**：只量化骨干、把 head 整个留在 FP32，可能兼顾速度与精度。没试。注意这一思路在 GPU 上也意义不大——ORT 的 CUDA EP 没有 int8 卷积加速路径，QDQ 节点会退回 CPU。
+- **FP16**：GPU 上 FP16 通常还能再快 1.5~2×，本仓库只测了 FP32。要和 CUDA Graph 一起做才有可比性（FP16 会改内存布局，graph 得重录）。
+- **GPU 批量调优**：batch=8 那行 ORT 裸跑输给 PyTorch，只查到「启动开销 vs 图优化」这一层，没做逐层 profiling 定位到具体算子。

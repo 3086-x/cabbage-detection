@@ -1,0 +1,14 @@
+{
+  "onnx": "deploy/models/base_v2.onnx",
+  "n_images": 75,
+  "count_exact_match": 74,
+  "count_exact_rate": 98.7,
+  "count_diff_mean": -0.013,
+  "count_abs_diff_max": 1,
+  "box_max_diff_px": 0.012,
+  "score_max_diff": 0.000245,
+  "ep_assignment": {
+    "CUDAExecutionProvider": 717
+  },
+  "cuda_share_pct": 100.0
+}

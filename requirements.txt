@@ -32,6 +32,10 @@ opencv-python>=4.8
 onnx>=1.17
 onnxruntime>=1.20
 onnxslim>=0.1.82
+# 要跑 tools/bench_deploy.py 的 GPU 组，用下面这个替换上面的 onnxruntime：
+#   onnxruntime-gpu==1.26.0      ← 1.27 起 PyPI 默认包切到 CUDA 13，本机 torch 是 cu128
+# 两者共用 onnxruntime 模块，不能同时装。装完若 session.get_providers() 里没有
+# CUDAExecutionProvider，说明 DLL 没加载成功、已静默回落 CPU，详见 docs/DEPLOY.md 5.1。
 
 # HTTP 服务（src/serve/api.py）
 fastapi>=0.115

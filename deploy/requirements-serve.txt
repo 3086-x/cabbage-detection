@@ -6,6 +6,10 @@
 #
 # 注意 opencv 用 headless 版：服务端不显示窗口，装完整版会把 GUI 依赖
 # （libGL 等）一并拉进镜像。
+#
+# onnxruntime 固定 1.31.1：这是 CPU 服务实测跑出 30 QPS 的那一版。
+# 仓库里的 GPU 测速用的是 onnxruntime-gpu 1.26.0（1.27 之前的 PyPI 包才是
+# CUDA 12.8 构建，能和本机 torch 的 cuBLAS/cuDNN 9 对上），两者不要混装。
 onnxruntime==1.31.1
 opencv-python-headless==5.0.0.93
 numpy==2.5.4

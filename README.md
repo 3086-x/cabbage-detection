@@ -103,11 +103,11 @@ cd cabbage-detection && bash reproduce.sh stats
   而不是定位变准。
 - **A 组缺 RT-DETR 的统一协议**：原论文只跑 20 epoch、必须用 AdamW 小学习率、8G 显存下 batch 只能到 4，
   三项协议都不同，需单独设计。现有那行是跨环境历史数据，只作存在性证明、不参与排名。
-- **测速只到 PyTorch 与 ORT-CPU**：笔记本 GPU 频率漂移让同一模型跨批次时延差 35%（CV 13.9%），
-  所以「谁快几毫秒」不构成结论。ORT-GPU 与 TensorRT 都没测：本机只装了 onnxruntime 的 CPU 版，
-  RTX 5060 是 sm_120、TensorRT 要单独适配 Blackwell。
+- **测速是单点测量，没有重复实验**：部署那组每种配置只跑 1 次（预热 25 + 计时 150 取中位），
+  不像主实验那样有 3 种子与 bootstrap。所以「1.69×」是测量值，不是区间。同机跨天复跑，
+  绝对值会差 25% 以上，只有同一次运行内的比值可信。TensorRT 与 FP16 未测（sm_120 需单独适配 TRT 10.x）。
 - **INT8 不划算，已回退 FP32**：量化后 mAP50-95 掉 0.56pp（落在本数据集的可分辨门槛内），
-  但前向反而慢 35%（45.04ms vs 33.25ms）——小模型上量化的重排开销超过整数卷积的收益。
+  但前向反而慢 23%（51.93ms vs 42.27ms）——小模型上量化的重排开销超过整数卷积的收益。
   服务端最终用 FP32。详见 [docs/DEPLOY.md](docs/DEPLOY.md)。
 - **Docker 镜像未实测构建**：本机没有 Docker，Dockerfile 与 compose 按 CPU-only 最小依赖写好，
   但没有实际构建过，不能当作「已验证可部署」。
@@ -120,10 +120,11 @@ cd cabbage-detection && bash reproduce.sh stats
   要不要复查、要不要换阈值重跑。本仓库的结论直接决定了那边的选型：注意力模块无可分辨增益，
   所以工具层固定用 YOLOv11n 基线，复杂度花在编排与错误恢复上，而不是继续堆结构。
 - **ONNX 部署链路 → 已完成**：导出后做张量级与框级两级自检，同输入下 PyTorch 与 ONNX 的
-  mAP50-95 差 **0.0001**、框坐标偏差 **0.000px**；ORT-CPU 前向比 PyTorch-CPU 快 **1.66×**。
+  mAP50-95 差 **0.0001**、框坐标偏差 **0.024px**；ORT-CPU 前向比 PyTorch-CPU 快 **1.81×**。
+  同一个 GPU 上 ORT 比 PyTorch 快 **1.69×**（7.64 vs 12.90ms），开 CUDA Graph 后 **3.03ms / 4.26×**。
   FastAPI 服务 4 路并发约 **30 QPS / P95 156ms**，与离线评估的株数逐图一致。
-  做的过程中撞到两个不报错只掉点的坑（val 输入是 672 不是 640、INT8 全量化把分类分支打塌），
-  过程与负结果都在 [docs/DEPLOY.md](docs/DEPLOY.md)。
+  做的过程中撞到三个不报错只掉点的坑（val 输入是 672 不是 640、INT8 全量化把分类分支打塌、
+  ORT-GPU 因 CUDA 大版本不匹配静默回落 CPU），过程与负结果都在 [docs/DEPLOY.md](docs/DEPLOY.md)。
 - **TensorRT 时延**：须先锁频 + 热稳态才有意义，且 sm_120 要单独适配，未做。
 - **按密度自适应计数阈值**：sparse / medium / dense 三档的最优 conf 并不相同，
   现在用 val 选出的单一全局值。
