@@ -133,6 +133,7 @@ cd cabbage-detection && bash reproduce.sh stats
 
 | 想了解 | 看 |
 |---|---|
+| **已完成 / 未完成 / 文件存放位置的完整盘点** | [docs/STATUS.md](docs/STATUS.md) |
 | 数据规模、标注口径、为何不公开 | [DATA.md](DATA.md) |
 | 环境、8G 显存下的实操约束 | [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) |
 | ONNX 导出、INT8 取舍、服务与压测 | [docs/DEPLOY.md](docs/DEPLOY.md) |
