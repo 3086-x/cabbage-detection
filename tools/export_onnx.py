@@ -110,8 +110,37 @@ def check_tensor(pt_out: np.ndarray, ort_out: np.ndarray) -> dict:
     }
 
 
+def _match_by_center(b_ref: np.ndarray, b_other: np.ndarray) -> np.ndarray:
+    """按中心点距离做一对一匹配，返回 b_ref 每个框对应的 b_other 下标（-1 表示没配上）。
+
+    为什么不能「按置信度排序后逐行比」：密集小目标里两个框的分数可能只差 1e-4，
+    浮点累积差就足以让它们在排序中互换位置，于是逐行比对看到的是两个不同位置的框，
+    报出上百像素的偏差——这是**判定方式产生的假偏差**，不是模型导出错了。
+    """
+    n, m = len(b_ref), len(b_other)
+    idx = -np.ones(n, dtype=int)
+    if n == 0 or m == 0:
+        return idx
+
+    c_ref = (b_ref[:, :2] + b_ref[:, 2:]) / 2
+    c_oth = (b_other[:, :2] + b_other[:, 2:]) / 2
+    d = np.linalg.norm(c_ref[:, None, :] - c_oth[None, :, :], axis=-1)
+
+    free_rows = np.ones(n, dtype=bool)
+    free_cols = np.ones(m, dtype=bool)
+    for _ in range(min(n, m)):
+        dd = np.where(free_rows[:, None] & free_cols[None, :], d, np.inf)
+        i, j = np.unravel_index(np.argmin(dd), dd.shape)
+        if not np.isfinite(dd[i, j]):
+            break
+        idx[i] = j
+        free_rows[i] = False
+        free_cols[j] = False
+    return idx
+
+
 def check_boxes(pt_model_boxes: dict, ort_boxes: dict) -> dict:
-    """框级比对：数量、置信度、以及按置信度排序后的坐标偏差。"""
+    """框级比对：数量、置信度、以及**按中心点匹配后**的坐标偏差。"""
     n_pt, n_ort = len(pt_model_boxes["scores"]), len(ort_boxes["scores"])
     res = {"ok": True, "n_pytorch": n_pt, "n_onnx": n_ort}
 
@@ -125,15 +154,17 @@ def check_boxes(pt_model_boxes: dict, ort_boxes: dict) -> dict:
         res["max_box_diff_px"] = 0.0
         return res
 
-    order_pt = np.argsort(-pt_model_boxes["scores"])
-    order_ort = np.argsort(-ort_boxes["scores"])
-    s_pt = pt_model_boxes["scores"][order_pt]
-    s_ort = ort_boxes["scores"][order_ort]
-    b_pt = pt_model_boxes["boxes"][order_pt]
-    b_ort = ort_boxes["boxes"][order_ort]
+    b_pt = pt_model_boxes["boxes"]
+    b_ort = ort_boxes["boxes"]
+    idx = _match_by_center(b_pt, b_ort)
+    unmatched = int((idx < 0).sum())
+    if unmatched:
+        res["ok"] = False
+        res["reason"] = f"{unmatched} 个框没匹配上"
+        return res
 
-    res["max_score_diff"] = float(np.abs(s_pt - s_ort).max())
-    res["max_box_diff_px"] = float(np.abs(b_pt - b_ort).max())
+    res["max_score_diff"] = float(np.abs(pt_model_boxes["scores"] - ort_boxes["scores"][idx]).max())
+    res["max_box_diff_px"] = float(np.abs(b_pt - b_ort[idx]).max())
     if res["max_box_diff_px"] > BOX_TOL:
         res["ok"] = False
         res["reason"] = f"框偏差 {res['max_box_diff_px']:.2f}px 超过 {BOX_TOL}px"
@@ -147,6 +178,8 @@ def main() -> None:
     ap.add_argument("--imgsz", type=int, default=IMGSZ)
     ap.add_argument("--opset", type=int, default=17)
     ap.add_argument("--dynamic", action="store_true", help="导出动态 batch/尺寸")
+    ap.add_argument("--batch", type=int, default=1,
+                    help="固定 batch（dynamic=False 时生效）。batch>1 只做张量级自检，跳过框级")
     ap.add_argument("--no-simplify", action="store_true")
     ap.add_argument("--check-image", default="", help="框级自检用的图片，默认取 test 第一张")
     ap.add_argument("--outdir", default="deploy/models")
@@ -174,14 +207,16 @@ def main() -> None:
     # ---- 1) PyTorch 侧基准 ----
     model = YOLO(str(wpath))
     x_np, r, pad = preprocess(img, args.imgsz)
-    pt_raw = _torch_forward(model, x_np)
+    # 固定 batch 的模型必须喂同样张数的输入，否则 ONNX 侧直接报维度错
+    xb_np = np.repeat(x_np, args.batch, axis=0)
+    pt_raw = _torch_forward(model, xb_np)
 
     import cv2
 
     from tools.onnx_common import postprocess
 
     im = cv2.imread(str(img))
-    pt_boxes = postprocess(pt_raw, conf=0.25, iou=0.7, r=r, pad=pad, orig_shape=im.shape[:2])
+    pt_boxes = postprocess(pt_raw[0], conf=0.25, iou=0.7, r=r, pad=pad, orig_shape=im.shape[:2])
     print(f"[info] PyTorch 原始输出 {pt_raw.shape}，检出 {len(pt_boxes['scores'])} 个框")
 
     # ---- 2) 导出 ----
@@ -191,7 +226,7 @@ def main() -> None:
         opset=args.opset,
         simplify=not args.no_simplify,
         dynamic=args.dynamic,
-        batch=1,
+        batch=args.batch,
         device="cpu",
     )
     exported = Path(str(exported))
@@ -201,7 +236,7 @@ def main() -> None:
     print(f"[ok] 已导出 {dst} ({dst.stat().st_size / 1e6:.1f} MB)")
 
     # ---- 3) 张量级自检 ----
-    ort_raw = _ort_forward(dst, x_np)
+    ort_raw = _ort_forward(dst, xb_np)
     tcheck = check_tensor(pt_raw, ort_raw)
     print(
         f"[check] 张量级 坐标 max|Δ|={tcheck.get('coord_max_abs_diff_px', float('nan')):.2e}px "
@@ -213,18 +248,25 @@ def main() -> None:
         print(f"        {tcheck.get('reason', '')}")
 
     # ---- 4) 框级自检（走 ultralytics 自己的 ONNX 后端，覆盖给 NMS 的完整链路）----
-    onnx_model = YOLO(str(dst), task="detect")
-    res = onnx_model.predict(str(img), conf=0.25, iou=0.7, imgsz=args.imgsz, verbose=False)[0]
-    ort_boxes = {
-        "boxes": res.boxes.xyxy.cpu().numpy() if res.boxes is not None else np.empty((0, 4)),
-        "scores": res.boxes.conf.cpu().numpy() if res.boxes is not None else np.empty((0,)),
-    }
-    bcheck = check_boxes(pt_boxes, ort_boxes)
-    print(
-        f"[check] 框级 检出 {bcheck['n_pytorch']} vs {bcheck['n_onnx']}，"
-        f"max conf Δ={bcheck.get('max_score_diff', float('nan')):.2e}，"
-        f"max 坐标 Δ={bcheck.get('max_box_diff_px', float('nan')):.3f}px -> {'PASS' if bcheck['ok'] else 'FAIL'}"
-    )
+    if args.batch > 1:
+        print("[skip] 框级自检只对 batch=1 有效（ultralytics 的 ONNX 预测器按单张喂），"
+              "本模型的等价性只由张量级自检保证")
+        bcheck = {"ok": True, "skipped": True, "n_pytorch": len(pt_boxes["scores"]), "n_onnx": -1}
+        onnx_model = None
+    else:
+        onnx_model = YOLO(str(dst), task="detect")
+    if onnx_model is not None:
+        res = onnx_model.predict(str(img), conf=0.25, iou=0.7, imgsz=args.imgsz, verbose=False)[0]
+        ort_boxes = {
+            "boxes": res.boxes.xyxy.cpu().numpy() if res.boxes is not None else np.empty((0, 4)),
+            "scores": res.boxes.conf.cpu().numpy() if res.boxes is not None else np.empty((0,)),
+        }
+        bcheck = check_boxes(pt_boxes, ort_boxes)
+        print(
+            f"[check] 框级 检出 {bcheck['n_pytorch']} vs {bcheck['n_onnx']}，"
+            f"max conf Δ={bcheck.get('max_score_diff', float('nan')):.2e}，"
+            f"max 坐标 Δ={bcheck.get('max_box_diff_px', float('nan')):.3f}px -> {'PASS' if bcheck['ok'] else 'FAIL'}"
+        )
     if not bcheck["ok"]:
         print(f"        {bcheck.get('reason', '')}")
 
@@ -245,6 +287,7 @@ def main() -> None:
         "imgsz": args.imgsz,
         "opset": args.opset,
         "dynamic": args.dynamic,
+        "batch": args.batch,
         "simplify": not args.no_simplify,
         "signature": sig,
         "check_tensor": tcheck,

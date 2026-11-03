@@ -6,6 +6,7 @@
     "imgsz": 640,
     "opset": 17,
     "dynamic": false,
+    "batch": 1,
     "simplify": true,
     "signature": {
       "inputs": [
@@ -49,8 +50,8 @@
       "ok": true,
       "n_pytorch": 51,
       "n_onnx": 51,
-      "max_score_diff": 7.152557373046875e-07,
-      "max_box_diff_px": 0.000244140625
+      "max_score_diff": 0.0005856752395629883,
+      "max_box_diff_px": 0.02435302734375
     }
   },
   "cbam_v2": {
@@ -105,6 +106,114 @@
       "n_onnx": 45,
       "max_score_diff": 5.662441253662109e-07,
       "max_box_diff_px": 0.0001220703125
+    }
+  },
+  "base_v2_dyn": {
+    "source_weights": "runs/detect/train_base_v2/weights/best.pt",
+    "onnx": "deploy/models/base_v2_dyn.onnx",
+    "size_mb": 10.82,
+    "imgsz": 640,
+    "opset": 17,
+    "dynamic": true,
+    "simplify": true,
+    "signature": {
+      "inputs": [
+        {
+          "name": "images",
+          "shape": [
+            "batch",
+            3,
+            "height",
+            "width"
+          ],
+          "type": "tensor(float)"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output0",
+          "shape": [
+            "batch",
+            5,
+            "anchors"
+          ],
+          "type": "tensor(float)"
+        }
+      ]
+    },
+    "check_tensor": {
+      "ok": true,
+      "shape": [
+        1,
+        5,
+        8400
+      ],
+      "coord_max_abs_diff_px": 0.001495361328125,
+      "coord_max_rel_diff": 2.3365020751953127e-06,
+      "conf_max_abs_diff": 9.59634780883789e-06,
+      "tol_coord_px": 0.05,
+      "tol_conf": 0.0005
+    },
+    "check_boxes": {
+      "ok": true,
+      "n_pytorch": 51,
+      "n_onnx": 51,
+      "max_score_diff": 0.0005856752395629883,
+      "max_box_diff_px": 0.02435302734375
+    }
+  },
+  "base_v2_b8": {
+    "source_weights": "runs/detect/train_base_v2/weights/best.pt",
+    "onnx": "deploy/models/base_v2_b8.onnx",
+    "size_mb": 10.66,
+    "imgsz": 640,
+    "opset": 17,
+    "dynamic": false,
+    "batch": 8,
+    "simplify": true,
+    "signature": {
+      "inputs": [
+        {
+          "name": "images",
+          "shape": [
+            8,
+            3,
+            640,
+            640
+          ],
+          "type": "tensor(float)"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output0",
+          "shape": [
+            8,
+            5,
+            8400
+          ],
+          "type": "tensor(float)"
+        }
+      ]
+    },
+    "check_tensor": {
+      "ok": true,
+      "shape": [
+        8,
+        5,
+        8400
+      ],
+      "coord_max_abs_diff_px": 0.00164794921875,
+      "coord_max_rel_diff": 2.574920654296875e-06,
+      "conf_max_abs_diff": 8.881092071533203e-06,
+      "tol_coord_px": 0.05,
+      "tol_conf": 0.0005
+    },
+    "check_boxes": {
+      "ok": true,
+      "skipped": true,
+      "n_pytorch": 51,
+      "n_onnx": -1
     }
   }
 }
